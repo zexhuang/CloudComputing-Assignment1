@@ -10,14 +10,20 @@ def processGrids():
     with open(grids_file_path) as json_file:  
         grids_data = json.load(json_file)
         coordinates = grids_data['features']
-    return dict()
+    return coordinates
 
 def processTwitters():
     # read twitter file
-    twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/smallTwitter.json'
+    twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
     with open(twitter_file_path) as json_file:  
         twitter_data = json.load(json_file)
-    return dict()
+
+    # the original twitter data file has 1000 rows of data
+    twitter_rows = twitter_data['rows']
+    for twitter in twitter_rows:
+        print(twitter)
+            
+    return twitter_data
 
 def main():
     beginninga_time = time.time()
