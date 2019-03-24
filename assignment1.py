@@ -1,7 +1,7 @@
 # Authors: Zexian Huang 
 # Date: March 24 2019
 import json
-#from mpi4py import MPI
+from mpi4py import MPI
 import time
 
 def processGrids(fpath):
