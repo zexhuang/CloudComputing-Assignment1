@@ -6,15 +6,19 @@ import time
 
 def processGrids(fpath):
         # read grids file
+    # grids_features is a dictionary of tuples, storing grid_id as keys and coordinates-polygon pairs as tuple
     grids_features = {}
     with open(fpath) as json_file:
         grids_data = json.load(json_file)
         for feature in grids_data['features']:
-            grids_features.update({feature['properties']['id']: feature['geometry']['coordinates'][0]})
+            coordinates = feature['geometry']['coordinates'][0]
+            polygon = feature['properties'].values()  # We still need to merge small polygon into a large one
+            grid_id = polygon.pop(2)
+            grids_features.update({grid_id: (coordinates, polygon)})
     return grids_features
 
 def processTwitters(fpath):
-        # read twitter file
+    # read twitter file
     with open(fpath) as json_file:
         twitter_data = json.load(json_file)
     return twitter_data
@@ -29,7 +33,6 @@ def main():
 
     myGrids = processGrids(grids_file_path)
     myTwitter = processTwitters(twitter_file_path)
-    myGrids
 
     end_time = time.time()
 
