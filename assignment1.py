@@ -14,5 +14,8 @@ twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-rem
 with open(twitter_file_path) as json_file:  
     twitter_data = json.load(json_file)
 
+grid = dict()
+for feature in mg['features']:
+    grid.update({feature['properties']['id']: feature['geometry']['coordinates'][0]})
 
 end_time = time.time()
