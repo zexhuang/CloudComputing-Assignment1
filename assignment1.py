@@ -5,7 +5,7 @@ from mpi4py import MPI
 import time
 
 def processGrids(fpath):
-        # read grids file
+    # read grids file
     # grids_features is a dictionary of tuples, storing grid_id as keys and coordinates-polygon pairs as tuple
     grids_features = {}
     with open(fpath) as json_file:
