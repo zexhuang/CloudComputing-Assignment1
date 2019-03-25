@@ -14,6 +14,7 @@ def processGrids(fpath):
     grids_ploygons = {}
     with open(fpath, encoding = 'UTF-8') as json_file:
         grids_data = json.load(json_file)
+        json_file.close()
         grids_ploygons.update(map(lambda x: [x['properties']['id'], list(x['properties'].values())[1:]], grids_data['features']))
         grids_coordinates.update(map(lambda x: [x['properties']['id'], x['geometry']['coordinates'][0]], grids_data['features']))
         ploygons = pd.DataFrame(grids_ploygons)
@@ -28,9 +29,14 @@ def processGrids(fpath):
 
 def processTwitters(fpath):
     # read twitter file
+    twitter_features = {}
     with open(fpath, encoding = 'UTF-8') as json_file:
         twitter_data = json.load(json_file)
-    return twitter_data
+        for row in twitter_data['rows']:
+            if row['doc']['entities']['hashtags']:
+                twitter_features.update({tuple(row['value']['geometry']['coordinates']): row['doc']['entities']['hashtags'][0]['text']})
+        # we still need to parse the json file in iteration
+    return twitter_features
 
 # This function is for returning a list of large grids, such as grid A, B, C, D 
 def largeGridsList(xmin, ymin, xmax, ymax):
