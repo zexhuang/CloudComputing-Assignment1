@@ -3,17 +3,27 @@
 import json
 from mpi4py import MPI
 import time
+import pandas as pd
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
 def processGrids(fpath):
-    # read grids file
-    # grids_features is a dictionary of tuples, storing grid_id as keys and coordinates-polygon pairs as tuple
+    # grids_features is a dictionary whose keys are ploygons and values are dictionary whose keys are grid_ids and values are coordinates
     grids_features = {}
+    grids_coordinates = {}
+    grids_ploygons = {}
     with open(fpath, encoding = 'UTF-8') as json_file:
         grids_data = json.load(json_file)
-        grids_features.update(map(lambda x: [x['properties']['id'], (x['geometry']['coordinates'][0], list(x['properties'].values())[1:])], grids_data['features']))
-        # We still need to merge small polygon into a large one
+        grids_ploygons.update(map(lambda x: [x['properties']['id'], list(x['properties'].values())[1:]], grids_data['features']))
+        grids_coordinates.update(map(lambda x: [x['properties']['id'], x['geometry']['coordinates'][0]], grids_data['features']))
+        ploygons = pd.DataFrame(grids_ploygons)
+        coordinates = pd.DataFrame(grids_coordinates)
+        for name in ['A', 'B', 'C', 'D']:
+            # 0'xmin', 1'ymin', 2'xmax', 3'ymax'
+            ploygon = tuple(pd.concat([ploygons.filter(like = name).loc[[0, 2], :].min(axis = 1), ploygons.filter(like = name).loc[[1, 3], :].max(axis = 1)]))
+            coordinate = coordinates.filter(like = name).to_dict()
+            coordinate.update(map(lambda x: (x, list(coordinate[x].values())), coordinate.keys()))
+            grids_features.update({ploygon: coordinate})
     return grids_features
 
 def processTwitters(fpath):
