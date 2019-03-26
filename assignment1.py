@@ -23,7 +23,7 @@ def processGrids(fpath):
             # 0'xmin', 1'ymin', 2'xmax', 3'ymax'
             ploygon = tuple(pd.concat([ploygons.filter(like = name).loc[[0, 2], :].min(axis = 1), ploygons.filter(like = name).loc[[1, 3], :].max(axis = 1)]))
             coordinate = coordinates.filter(like = name).to_dict()
-            coordinate.update(map(lambda x: (x, list(coordinate[x].values())), coordinate.keys()))
+            coordinate.update(map(lambda x: (x, tuple(coordinate[x].values())), coordinate.keys()))
             grids_features.update({ploygon: coordinate})
     return grids_features
 
@@ -34,7 +34,7 @@ def processTwitters(fpath):
         twitter_data = json.load(json_file)
         for row in twitter_data['rows']:
             if row['doc']['entities']['hashtags']:
-                twitter_features.update({tuple(row['value']['geometry']['coordinates']): row['doc']['entities']['hashtags'][0]['text']})
+                twitter_features.update({tuple(row['value']['geometry']['coordinates']): tuple([row['doc']['entities']['hashtags'][0]['text']])})
         # we still need to parse the json file in iteration
     return twitter_features
 
@@ -64,10 +64,10 @@ def checkPointInPolygon (x,y):
 def main():
     beginninga_time = time.time()
 
-    grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
-    # grids_file_path = r"D:\Download\CCC\melbGrid.json"
-    twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/smallTwitter.json'
-    # twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
+    # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
+    grids_file_path = r"D:\Download\CCC\melbGrid.json"
+    # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/smallTwitter.json'
+    twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 
     myGrids = processGrids(grids_file_path)
     myTwitter = processTwitters(twitter_file_path)
