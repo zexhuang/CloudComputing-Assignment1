@@ -3,6 +3,7 @@
 import json
 from mpi4py import MPI
 import time
+import itertools
 import pandas as pd
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
@@ -30,14 +31,15 @@ def processGrids(fpath):
 
 def processTwitters(fpath):
     # read twitter file
-    # twitter_features is a dictionary whose keys are tuples of coordinates and values are tuple of hashtags
-    twitter_features = {}
+    # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
+    twitter_features = []
     with open(fpath, encoding = 'UTF-8') as json_file:
-        twitter_data = json.load(json_file)
-        for row in twitter_data['rows']:
+        for idx, line in enumerate(itertools.islice(json_file, 1, None)):
+            if line.startswith(']}'):
+                break
+            row = json.loads(line.rstrip(',\n'))
             if row['doc']['entities']['hashtags'] and row['value']['geometry']['coordinates']:
-                twitter_features.update({tuple(row['value']['geometry']['coordinates']): tuple([row['doc']['entities']['hashtags'][0]['text']])})
-        # we still need to parse the json file in iteration
+                twitter_features.append((tuple(row['value']['geometry']['coordinates']), [row['doc']['entities']['hashtags'][0]['text']]))
     return twitter_features
 
 # This function is for returning a dic of large grids, such as grid A, B, C, D 
