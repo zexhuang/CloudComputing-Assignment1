@@ -38,34 +38,42 @@ def processTwitters(fpath):
         # we still need to parse the json file in iteration
     return twitter_features
 
-# This function is for returning a list of large grids, such as grid A, B, C, D 
-def largeGridsList(xmin, ymin, xmax, ymax):
-    return list()
+# This function is for returning a dic of large grids, such as grid A, B, C, D 
+def largeGrids(grids_features:dict):
+    name = ['A', 'B', 'C', 'D']
+    largeGrids = []
+    for coord in grids_features.keys():
+        largeGrids.append(coord)
+    
+    return dict(zip(name,largeGrids))
 
-# This function is for returning a list of small areas, such as grid A1, A2, A3, A4
-def smallGridsList(c1,c2,c3,c4,c5):
-    return list()
+def smallGrids(grids_features:dict):
+    smallGrids = []
+    for area in grids_features.values():
+        smallGrids.append(area)
+
+    return smallGrids
 
 def checkPointInPolygon (x,y):
     point = Point(x,y)
-    print(point)
-
     # point = Point(0.5, 0.5)
     # polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
     # print(polygon.contains(point)) -> boolean value
-
     return bool
 
 def main():
     beginninga_time = time.time()
 
-    # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
-    grids_file_path = r"D:\Download\CCC\melbGrid.json"
-    # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/smallTwitter.json'
-    twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
+    grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
+    # grids_file_path = r"D:\Download\CCC\melbGrid.json"
+    twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/smallTwitter.json'
+    # twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 
     myGrids = processGrids(grids_file_path)
     myTwitter = processTwitters(twitter_file_path)
+
+    largeGrids(myGrids)
+    smallGrids(myGrids)
 
     end_time = time.time()
 
