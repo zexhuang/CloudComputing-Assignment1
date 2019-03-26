@@ -8,6 +8,7 @@ from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
 def processGrids(fpath):
+    # read melbGrid file
     # grids_features is a dictionary whose keys are ploygons and values are dictionary whose keys are grid_ids and values are coordinates
     grids_features = {}
     grids_coordinates = {}
@@ -29,11 +30,12 @@ def processGrids(fpath):
 
 def processTwitters(fpath):
     # read twitter file
+    # twitter_features is a dictionary whose keys are tuples of coordinates and values are tuple of hashtags
     twitter_features = {}
     with open(fpath, encoding = 'UTF-8') as json_file:
         twitter_data = json.load(json_file)
         for row in twitter_data['rows']:
-            if row['doc']['entities']['hashtags']:
+            if row['doc']['entities']['hashtags'] and row['value']['geometry']['coordinates']:
                 twitter_features.update({tuple(row['value']['geometry']['coordinates']): tuple([row['doc']['entities']['hashtags'][0]['text']])})
         # we still need to parse the json file in iteration
     return twitter_features
