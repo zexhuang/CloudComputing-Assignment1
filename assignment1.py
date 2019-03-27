@@ -58,7 +58,35 @@ def smallGrids(grids_features:dict):
 
     return smallGrids
 
-def checkPointInPolygon (x,y):
+def checkPointInLargeGrids(largeGrids:dict, twitters:list):
+    countA = 0
+    countB = 0
+    countC = 0
+    countD = 0
+    countNoArea = 0
+    for twitter in twitters:
+        # coordinates
+        pointX = twitter[0][0]
+        pointY = twitter[0][1]
+
+        if (largeGrids.get("A")[0] < pointX < largeGrids.get("A")[2]) and (largeGrids.get("A")[1] < pointY < largeGrids.get("A")[1]):
+            countA += 1
+        elif (largeGrids.get("B")[0] < pointX < largeGrids.get("B")[2]) and (largeGrids.get("B")[1] < pointY < largeGrids.get("B")[3]):
+            countB += 1
+        elif (largeGrids.get("C")[0] < pointX < largeGrids.get("C")[2]) and (largeGrids.get("C")[1] < pointY < largeGrids.get("C")[3]):
+            countC += 1
+        elif (largeGrids.get("D")[0] < pointX < largeGrids.get("D")[2]) and (largeGrids.get("D")[1] < pointY < largeGrids.get("D")[3]):
+            countD += 1
+        else:
+            countNoArea += 1
+    
+    print(countA)
+    print(countB)
+    print(countC)
+    print(countD)
+    print(countNoArea)
+
+def checkPointInSmallGrids(x,y):
     point = Point(x,y)
     # point = Point(0.5, 0.5)
     # polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
@@ -70,17 +98,18 @@ def main():
 
     # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
     grids_file_path = r"D:\Download\CCC\melbGrid.json"
-    # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/smallTwitter.json'
+    # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
     twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 
     myGrids = processGrids(grids_file_path)
     myTwitter = processTwitters(twitter_file_path)
 
-    largeGrids(myGrids)
-    smallGrids(myGrids)
+    mylargeGrids = largeGrids(myGrids)
+    mySmallGrids = smallGrids(myGrids)
+
+    checkPointInLargeGrids(mylargeGrids, myTwitter)
 
     end_time = time.time()
-
     used_time = end_time - beginninga_time
     print (used_time)
 
