@@ -27,19 +27,39 @@ def processGrids(fpath):
             coordinate = coordinates.filter(like = name).to_dict()
             coordinate.update(map(lambda x: (x, list(coordinate[x].values())), coordinate.keys()))
             grids_features.update({ploygon: coordinate})
+
     return grids_features
 
 def processTwitters(fpath):
     # read twitter file
     # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
     twitter_features = []
-    with open(fpath, encoding = 'UTF-8') as json_file:
-        for idx, line in enumerate(itertools.islice(json_file, 1, None)):
-            if line.startswith(']}'):
-                break
-            row = json.loads(line.rstrip(',\n'))
-            if row['doc']['entities']['hashtags'] and row['value']['geometry']['coordinates']:
-                twitter_features.append((tuple(row['value']['geometry']['coordinates']), [row['doc']['entities']['hashtags'][0]['text']]))
+
+    if 'big' in fpath:
+        with open(fpath, encoding='UTF-8') as json_file:
+            for idx, line in enumerate(itertools.islice(json_file, 1, None)):
+                if line.startswith(']}'):
+                    break
+                row = json.loads(line.rstrip(',\n'))
+                if row['doc']['entities']['hashtags'] and row['doc']['coordinates']['coordinates']:
+                    twitter_features.append((tuple(row['doc']['coordinates']['coordinates']), [row['doc']['entities']['hashtags'][0]['text']]))
+                else:
+                    twitter_features.append((tuple(row['doc']['coordinates']['coordinates']), row['doc']['entities']['hashtags']))
+            json_file.close()
+    else:
+        with open(fpath, encoding='UTF-8') as json_file:
+            for line in itertools.islice(json_file, 1, None):
+                if line.startswith(']}'):
+                    break
+                row = json.loads(line.rstrip(',\n'))
+                if row['doc']['entities']['hashtags'] and row['value']['geometry']['coordinates']:
+                    twitter_features.append((tuple(row['value']['geometry']['coordinates']),
+                                             [row['doc']['entities']['hashtags'][0]['text']]))
+                else:
+                    twitter_features.append(
+                        (tuple(row['value']['geometry']['coordinates']), row['doc']['entities']['hashtags']))
+            json_file.close()
+
     return twitter_features
 
 # This function is for returning a dic of large grids, such as grid A, B, C, D 
@@ -60,6 +80,7 @@ def smallGrids(grids_features:dict):
 
 def checkPointInLargeGrids(largeGrids:dict, twitters:list):
     countA = countB = countC = countD = countNoArea = 0
+    # areaA = areaB = areaC = areaD = [] I've tried this line should be OK 0w0
     areaA = []
     areaB = []
     areaC = []
@@ -89,6 +110,7 @@ def checkPointInLargeGrids(largeGrids:dict, twitters:list):
     print(countC)
     print(countD)
     print(countNoArea)
+
     return {"A":areaA, "B":areaB, "C":areaC, "D":areaD}
 
 def main():
@@ -117,7 +139,7 @@ def main():
                 polygon = Polygon(mySmallGrids[name][key])
                 if polygon.contains(point):
                     resultDict[key].append(twitter)
-
+    # resultDict = {grid_id: Counter(term1: freqs, term2: freqs, term3: freqs...)}
     resultDict
 
     # C2:1414 C3:659 D3:116
