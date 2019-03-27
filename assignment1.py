@@ -1,10 +1,10 @@
 # Authors: Zexian Huang 
 # Date: March 24 2019
 import json
-from mpi4py import MPI
 import time
 import itertools
 import pandas as pd
+from mpi4py import MPI
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
@@ -52,9 +52,9 @@ def largeGrids(grids_features:dict):
     return dict(zip(name,largeGrids))
 
 def smallGrids(grids_features:dict):
-    smallGrids = []
-    for area in grids_features.values():
-        smallGrids.append(area)
+    smallGrids = {}
+    for (name, area) in zip(["A","B","C","D"],grids_features.values()):
+        smallGrids.update({name:area})
 
     return smallGrids
 
@@ -105,8 +105,17 @@ def main():
     mylargeGrids = largeGrids(myGrids)
     mySmallGrids = smallGrids(myGrids)
 
-    checkPointInLargeGrids(mylargeGrids, myTwitter)
-    
+    twittersInLargeGrids = checkPointInLargeGrids(mylargeGrids, myTwitter)
+
+    for name in ["A","B","C","D"]:
+        for twitter in twittersInLargeGrids[name]:
+            point = Point(twitter[0],twitter[1])
+            hashTag = twitter[2]
+            for key in mySmallGrids[name]:
+                polygon = Polygon(mySmallGrids[name][key])
+                if polygon.contains(point):
+                    print(polygon.contains(point))
+
     end_time = time.time()
     used_time = end_time - beginninga_time
     print (used_time)
