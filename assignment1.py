@@ -65,11 +65,7 @@ def checkPointInLargeGrids(largeGrids:dict, twitters:list):
         # coordinates
         pointX, pointY = twitter[0]
 
-<<<<<<< HEAD
-        if (largeGrids.get("A")[0] < pointX < largeGrids.get("A")[2]) and (largeGrids.get("A")[1] < pointY < largeGrids.get("A")[3]):
-=======
         if (largeGrids.get("A")[0] <= pointX <= largeGrids.get("A")[2]) and (largeGrids.get("A")[1] <= pointY <= largeGrids.get("A")[3]):
->>>>>>> 28b9f1bb858452849d0b20e4600802fe228bcffb
             countA += 1
         elif (largeGrids.get("B")[0] <= pointX <= largeGrids.get("B")[2]) and (largeGrids.get("B")[1] <= pointY <= largeGrids.get("B")[3]):
             countB += 1
