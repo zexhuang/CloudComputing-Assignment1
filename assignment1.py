@@ -94,10 +94,10 @@ def checkPointInLargeGrids(largeGrids:dict, twitters:list):
 def main():
     beginninga_time = time.time()
 
-    grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
-    # grids_file_path = r"D:\Download\CCC\melbGrid.json"
-    twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/smallTwitter.json'
-    # twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
+    # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
+    grids_file_path = r"D:\Download\CCC\melbGrid.json"
+    # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/smallTwitter.json'
+    twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 
     myGrids = processGrids(grids_file_path)
     myTwitter = processTwitters(twitter_file_path)
@@ -107,14 +107,21 @@ def main():
 
     twittersInLargeGrids = checkPointInLargeGrids(mylargeGrids, myTwitter)
 
+    resultDict = {}
     for name in ["A","B","C","D"]:
         for twitter in twittersInLargeGrids[name]:
             point = Point(twitter[0],twitter[1])
-            hashTag = twitter[2]
             for key in mySmallGrids[name]:
+                if key not in resultDict:
+                    resultDict.update({key:list()})
                 polygon = Polygon(mySmallGrids[name][key])
                 if polygon.contains(point):
-                    print(polygon.contains(point))
+                    resultDict[key].append(twitter)
+
+    resultDict
+
+    # C2:1414 C3:659 D3:116
+    # total is 2426
 
     end_time = time.time()
     used_time = end_time - beginninga_time
