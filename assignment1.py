@@ -59,17 +59,13 @@ def smallGrids(grids_features:dict):
     return smallGrids
 
 def checkPointInLargeGrids(largeGrids:dict, twitters:list):
-    countA = 0
-    countB = 0
-    countC = 0
-    countD = 0
-    countNoArea = 0
+    countA = countB = countC = countD = countNoArea = 0
+
     for twitter in twitters:
         # coordinates
-        pointX = twitter[0][0]
-        pointY = twitter[0][1]
+        pointX, pointY = twitter[0]
 
-        if (largeGrids.get("A")[0] < pointX < largeGrids.get("A")[2]) and (largeGrids.get("A")[1] < pointY < largeGrids.get("A")[1]):
+        if (largeGrids.get("A")[0] < pointX < largeGrids.get("A")[2]) and (largeGrids.get("A")[1] < pointY < largeGrids.get("A")[3]):
             countA += 1
         elif (largeGrids.get("B")[0] < pointX < largeGrids.get("B")[2]) and (largeGrids.get("B")[1] < pointY < largeGrids.get("B")[3]):
             countB += 1
