@@ -60,13 +60,15 @@ def smallGrids(grids_features:dict):
 
 def checkPointInLargeGrids(largeGrids:dict, twitters:list):
     countA = countB = countC = countD = countNoArea = 0
-    areaA = areaB = areaC = areaD = []
+    areaA = []
+    areaB = []
+    areaC = []
+    areaD = []
 
     for twitter in twitters:
         # coordinates
         pointX, pointY = twitter[0]
         hashTag = twitter[1]
-
         if (largeGrids.get("A")[1] <= pointY <= largeGrids.get("A")[3]):
             countA += 1
             areaA.append ((pointX,pointY,hashTag))
@@ -104,7 +106,7 @@ def main():
     mySmallGrids = smallGrids(myGrids)
 
     checkPointInLargeGrids(mylargeGrids, myTwitter)
-
+    
     end_time = time.time()
     used_time = end_time - beginninga_time
     print (used_time)
