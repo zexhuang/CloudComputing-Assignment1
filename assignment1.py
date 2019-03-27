@@ -60,18 +60,17 @@ def smallGrids(grids_features:dict):
 
 def checkPointInLargeGrids(largeGrids:dict, twitters:list):
     countA = countB = countC = countD = countNoArea = 0
-
     for twitter in twitters:
         # coordinates
-        pointX, pointY = twitter[0]
+        pointY = twitter[0][1]
 
-        if (largeGrids.get("A")[0] <= pointX <= largeGrids.get("A")[2]) and (largeGrids.get("A")[1] <= pointY <= largeGrids.get("A")[3]):
+        if (largeGrids.get("A")[1] <= pointY <= largeGrids.get("A")[3]):
             countA += 1
-        elif (largeGrids.get("B")[0] <= pointX <= largeGrids.get("B")[2]) and (largeGrids.get("B")[1] <= pointY <= largeGrids.get("B")[3]):
+        elif (largeGrids.get("B")[1] <= pointY <= largeGrids.get("B")[3]):
             countB += 1
-        elif (largeGrids.get("C")[0] <= pointX <= largeGrids.get("C")[2]) and (largeGrids.get("C")[1] <= pointY <= largeGrids.get("C")[3]):
+        elif (largeGrids.get("C")[1] <= pointY <= largeGrids.get("C")[3]):
             countC += 1
-        elif (largeGrids.get("D")[0] <= pointX <= largeGrids.get("D")[2]) and (largeGrids.get("D")[1] <= pointY <= largeGrids.get("D")[3]):
+        elif (largeGrids.get("D")[1] <= pointY <= largeGrids.get("D")[3]):
             countD += 1
         else:
             countNoArea += 1
