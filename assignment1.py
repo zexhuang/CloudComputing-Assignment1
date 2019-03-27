@@ -60,18 +60,25 @@ def smallGrids(grids_features:dict):
 
 def checkPointInLargeGrids(largeGrids:dict, twitters:list):
     countA = countB = countC = countD = countNoArea = 0
+    areaA = areaB = areaC = areaD = []
+
     for twitter in twitters:
         # coordinates
-        pointY = twitter[0][1]
+        pointX, pointY = twitter[0]
+        hashTag = twitter[1]
 
         if (largeGrids.get("A")[1] <= pointY <= largeGrids.get("A")[3]):
             countA += 1
+            areaA.append ((pointX,pointY,hashTag))
         elif (largeGrids.get("B")[1] <= pointY <= largeGrids.get("B")[3]):
             countB += 1
+            areaB.append ((pointX,pointY,hashTag))
         elif (largeGrids.get("C")[1] <= pointY <= largeGrids.get("C")[3]):
             countC += 1
+            areaC.append ((pointX,pointY,hashTag))
         elif (largeGrids.get("D")[1] <= pointY <= largeGrids.get("D")[3]):
             countD += 1
+            areaD.append ((pointX,pointY,hashTag))
         else:
             countNoArea += 1
     
@@ -80,13 +87,7 @@ def checkPointInLargeGrids(largeGrids:dict, twitters:list):
     print(countC)
     print(countD)
     print(countNoArea)
-
-def checkPointInSmallGrids(x,y):
-    point = Point(x,y)
-    # point = Point(0.5, 0.5)
-    # polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
-    # print(polygon.contains(point)) -> boolean value
-    return bool
+    return {"A":areaA, "B":areaB, "C":areaC, "D":areaD}
 
 def main():
     beginninga_time = time.time()
