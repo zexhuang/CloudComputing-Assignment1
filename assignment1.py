@@ -93,34 +93,49 @@ def checkPointsInGrids (largeGrids:dict, smallGrids:dict, twitters:list):
         hashTag = twitter[1]
         if (largeGrids.get("A")[1] <= pointY <= largeGrids.get("A")[3]):
             countA += 1
-            areaA.append (([pointX,pointY],hashTag))
+            areaA.append ({"coord":[pointX,pointY],"hashTag":hashTag})
         elif (largeGrids.get("B")[1] <= pointY <= largeGrids.get("B")[3]):
             countB += 1
-            areaB.append (([pointX,pointY],hashTag))
+            areaB.append ({"coord":[pointX,pointY],"hashTag":hashTag})
         elif (largeGrids.get("C")[1] <= pointY <= largeGrids.get("C")[3]):
             countC += 1
-            areaC.append (([pointX,pointY],hashTag))
+            areaC.append ({"coord":[pointX,pointY],"hashTag":hashTag})
         elif (largeGrids.get("D")[1] <= pointY <= largeGrids.get("D")[3]):
             countD += 1
-            areaD.append ((pointX,pointY,hashTag))
+            areaD.append ({"coord":[pointX,pointY],"hashTag":hashTag})
         else:
             countNoArea += 1
 
-    print("the amount of twitters in area A are %d" % countA)
-    print("the amount of twitters in area B are %d" % countB)
-    print("the amount of twitters in area C are %d" % countC)
-    print("the amount of twitters in area A are %d" % countD)
-    print("the amount of twitters don't fall off in any area are %d" % countNoArea)
+    # print("the amount of twitters in area A are %d" % countA)
+    # print("the amount of twitters in area B are %d" % countB)
+    # print("the amount of twitters in area C are %d" % countC)
+    # print("the amount of twitters in area A are %d" % countD)
+    # print("the amount of twitters don't fall off in any area are %d" % countNoArea)
 
-    return {"A":areaA, "B":areaB, "C":areaC, "D":areaD}
+    twittersInLargeGrids = dict(zip(names,[areaA,areaB,areaC,areaD]))
+    twitterDict = {}
+    for name in names:
+        twitters = twittersInLargeGrids[name]
+        grids = smallGrids[name]
+        for twitter in twitters:
+            point = Point(twitter["coord"][0],twitter["coord"][1])
+            for key in grids:
+                if key not in twitterDict:
+                    twitterDict.update({key:[{"coord":[]},{"hashTag":Counter()}]})
+                polygon = Polygon(grids[key])
+                if polygon.contains(point):
+                    twitterDict[key][0]["coord"].append(twitter["coord"])
+                    twitterDict[key][1]["hashTag"].update(twitter["hashTag"])
+
+    return twitterDict
 
 def main():
     beginninga_time = time.time()
 
-    # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
-    grids_file_path = r"D:\Download\CCC\melbGrid.json"
-    # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/smallTwitter.json'
-    twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
+    grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
+    # grids_file_path = r"D:\Download\CCC\melbGrid.json"
+    twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing//assignment1-remote/smallTwitter.json'
+    # twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 
     myGrids = processGrids(grids_file_path)
 
@@ -129,12 +144,16 @@ def main():
 
     myTwitter = processTwitters(twitter_file_path)
 
-    resultDict = checkPointsInGrids (mylargeGrids,mySmallGrids,myTwitter)
-    resultDict
+    twitterDict = checkPointsInGrids (mylargeGrids,mySmallGrids,myTwitter)
+
+    hashTag_counter = Counter(twitterDict["C2"][1]["hashTag"])
+    twitters_counter = len(twitterDict["C2"][0]["coord"])
+    print("the hashTag count in grid C2 are %s" % hashTag_counter.most_common(5))
+    print("the twitters count in grid C2 are %s" % twitters_counter)
 
     end_time = time.time()
     used_time = end_time - beginninga_time
-    print ("the processing time is %f" % used_time)
+    print ("the processing time is %f seconds" % used_time)
 
 if __name__== "__main__":
     main()
