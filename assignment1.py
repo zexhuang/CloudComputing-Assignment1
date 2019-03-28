@@ -85,7 +85,7 @@ def smallGrids(grids_features:dict):
 
 def checkPointInLargeGrids(largeGrids:dict, twitters:list):
     countA = countB = countC = countD = countNoArea = 0
-    # areaA = areaB = areaC = areaD = [] I've tried this line should be OK 0w0
+    # areaA = areaB = areaC = areaD = [] # I've tried this line should be OK 0w0
     areaA = []
     areaB = []
     areaC = []
@@ -109,7 +109,7 @@ def checkPointInLargeGrids(largeGrids:dict, twitters:list):
             areaD.append ((pointX,pointY,hashTag))
         else:
             countNoArea += 1
-    
+
     print(countA)
     print(countB)
     print(countC)
