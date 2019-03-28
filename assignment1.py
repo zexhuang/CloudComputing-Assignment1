@@ -41,10 +41,13 @@ def processTwitters(fpath):
                 if line.startswith(']}'):
                     break
                 row = json.loads(line.rstrip(',\n'))
-                if row['doc']['entities']['hashtags'] and row['doc']['coordinates']['coordinates']:
-                    twitter_features.append((tuple(row['doc']['coordinates']['coordinates']), [row['doc']['entities']['hashtags'][0]['text']]))
-                else:
-                    twitter_features.append((tuple(row['doc']['coordinates']['coordinates']), row['doc']['entities']['hashtags']))
+                if row['doc']['coordinates']:
+                    if row['doc']['entities']['hashtags']:
+                        twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
+                                                 [row['doc']['entities']['hashtags'][0]['text']]))
+                    else:
+                        twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
+                                                 row['doc']['entities']['hashtags']))
             json_file.close()
     else:
         with open(fpath, encoding='UTF-8') as json_file:
@@ -52,12 +55,14 @@ def processTwitters(fpath):
                 if line.startswith(']}'):
                     break
                 row = json.loads(line.rstrip(',\n'))
-                if row['doc']['entities']['hashtags'] and row['value']['geometry']['coordinates']:
-                    twitter_features.append((tuple(row['value']['geometry']['coordinates']),
+                if row['value']['geometry']['coordinates']:
+                    if row['doc']['entities']['hashtags']:
+                        twitter_features.append((tuple(row['value']['geometry']['coordinates']),
                                              [row['doc']['entities']['hashtags'][0]['text']]))
-                else:
-                    twitter_features.append(
-                        (tuple(row['value']['geometry']['coordinates']), row['doc']['entities']['hashtags']))
+                    else:
+                        twitter_features.append(
+                            (tuple(row['value']['geometry']['coordinates']),
+                             row['doc']['entities']['hashtags']))
             json_file.close()
 
     return twitter_features
