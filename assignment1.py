@@ -92,7 +92,7 @@ def checkPointsInPoly(poly,coord):
     polygon = np.array(poly)
     polyPath = mplPath.Path(polygon)
     point = coord
-    acc = 0.001
+    acc = 0.0001
     isIn = polyPath.contains_point(point,radius=acc) or polyPath.contains_point(point,radius=-acc)
     return isIn
 
@@ -128,7 +128,7 @@ def main():
 
     # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
     grids_file_path = r"D:\Download\CCC\melbGrid.json"
-    # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/smallTwitter.json'
+    # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/twitter-melb.json'
     twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 
     myGrids = processGrids(grids_file_path)
