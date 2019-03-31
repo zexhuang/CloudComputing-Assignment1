@@ -91,7 +91,8 @@ def checkPointsInPoly(poly,coord):
     polygon = np.array(poly)
     polyPath = mplPath.Path(polygon)
     point = coord
-    isIn = polyPath.contains_point(point)
+    acc = 0.000001
+    isIn = polyPath.contains_point(point, radius = acc)
     return isIn
 
 def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
