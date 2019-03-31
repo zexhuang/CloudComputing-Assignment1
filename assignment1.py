@@ -7,9 +7,6 @@ import pandas as pd
 from mpi4py import MPI
 from collections import Counter
 
-from shapely.geometry import Point
-from shapely.geometry.polygon import Polygon
-
 import matplotlib.path as mplPath
 import numpy as np
 
@@ -20,20 +17,22 @@ def processGrids(fpath):
     # grids_features is a dictionary whose keys are ploygons and values are dictionary whose keys are grid_ids and values are coordinates
     grids_features = {}
     grids_coordinates = {}
-    grids_ploygons = {}
+    char_ploygons = {}
+
     with open(fpath, encoding = 'UTF-8') as json_file:
         grids_data = json.load(json_file)
         json_file.close()
-        grids_ploygons.update(map(lambda x: [x['properties']['id'], list(x['properties'].values())[1:]], grids_data['features']))
+        char_ploygons.update(map(lambda x: [x['properties']['id'], list(x['properties'].values())[1:]], grids_data['features']))
         grids_coordinates.update(map(lambda x: [x['properties']['id'], list(map(lambda y: tuple(y), x['geometry']['coordinates'][0]))], grids_data['features']))
-        ploygons = pd.DataFrame(grids_ploygons)
+        char_ploygons = pd.DataFrame(char_ploygons)
         coordinates = pd.DataFrame(grids_coordinates)
         for name in names:
-            # 0'xmin', 1'ymin', 2'xmax', 3'ymax'
-            ploygon = tuple(pd.concat([ploygons.filter(like = name).loc[[0, 2], :].min(axis = 1), ploygons.filter(like = name).loc[[1, 3], :].max(axis = 1)]))
-            coordinate = coordinates.filter(like = name).to_dict()
-            coordinate.update(map(lambda x: (x, list(coordinate[x].values())), coordinate.keys()))
-            grids_features.update({ploygon: coordinate})
+            char_ploygon = tuple(pd.concat([char_ploygons.filter(like = name).loc[[2], :].min(axis = 1), char_ploygons.filter(like = name).loc[[3], :].max(axis = 1)]))  # 0'ymin', 1'ymax'
+            num_ploygons = {}
+            for sg_name in coordinates.filter(like = name).columns.values:
+                num_ploygon = list(map(lambda x: x[0], coordinates[sg_name].tolist()))
+                num_ploygons.update({sg_name: (min(num_ploygon), max(num_ploygon))})  # 0'xmin',1'xmax'
+            grids_features.update({char_ploygon: num_ploygons})
 
     return grids_features
 
@@ -106,30 +105,25 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
             countDict[sid] = 0
     for twitter in twitters:
         pointX, pointY = twitter[0]
-        # point = Point(twitter[0][0], twitter[0][1])
-        point = [twitter[0][0],twitter[0][1]]
         hashtag = twitter[1]
         for name in names:
-            if (largeGrids.get(name)[1] <= pointY <= largeGrids.get(name)[3]):
-                sgrids = smallGrids[name]
-                for sgrid, spolygon in sgrids.items():
-                    # polygon = Polygon(spolygon)
-                    # if polygon.contains(point):
-                    polygon = [list(elem) for elem in spolygon]
-                    if checkPointsInPoly(polygon, point):
+            if largeGrids.get(name)[0] <= pointY <= largeGrids.get(name)[1]:
+                for sgrid, spolygon in smallGrids[name].items():
+                    if spolygon[0] <= pointX <= spolygon[1]:
                         countDict[sgrid] += 1
                         hashtagsDict[sgrid].update(hashtag)
                         break
                 break
+
     return hashtagsDict, countDict
 
 def main():
     beginninga_time = time.time()
 
-    grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
-    # grids_file_path = r"D:\Download\CCC\melbGrid.json"
-    twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-    # twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
+    # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
+    grids_file_path = r"D:\Download\CCC\melbGrid.json"
+    # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
+    twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 
     myGrids = processGrids(grids_file_path)
 
