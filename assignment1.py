@@ -120,6 +120,7 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
                     if checkPointsInPoly(polygon, point):
                         countDict[sgrid] += 1
                         hashtagsDict[sgrid].update(hashtag)
+                        break
                 break
     return hashtagsDict, countDict
 
