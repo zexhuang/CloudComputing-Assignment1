@@ -1,4 +1,4 @@
-# Authors: Zexian Huang 
+# Authors: Zexian Huang
 # Date: March 24 2019
 import json
 import time
@@ -10,7 +10,10 @@ from collections import Counter
 import matplotlib.path as mplPath
 import numpy as np
 
-names = ["A","B","C","D"]
+names = ["A", "B", "C", "D"]
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
 
 def processGrids(fpath):
     # read melbGrid file
@@ -19,26 +22,33 @@ def processGrids(fpath):
     grids_coordinates = {}
     char_ploygons = {}
 
-    with open(fpath, encoding = 'UTF-8') as json_file:
+    with open(fpath, encoding='UTF-8') as json_file:
         grids_data = json.load(json_file)
         json_file.close()
-        char_ploygons.update(map(lambda x: [x['properties']['id'], list(x['properties'].values())[1:]], grids_data['features']))
-        grids_coordinates.update(map(lambda x: [x['properties']['id'], list(map(lambda y: tuple(y), x['geometry']['coordinates'][0]))], grids_data['features']))
+        char_ploygons.update(
+            map(lambda x: [x['properties']['id'], list(x['properties'].values())[1:]], grids_data['features']))
+        grids_coordinates.update(
+            map(lambda x: [x['properties']['id'], list(map(lambda y: tuple(y), x['geometry']['coordinates'][0]))],
+                grids_data['features']))
         char_ploygons = pd.DataFrame(char_ploygons)
         coordinates = pd.DataFrame(grids_coordinates)
         for name in names:
-            char_ploygon = tuple(pd.concat([char_ploygons.filter(like = name).loc[[2], :].min(axis = 1), char_ploygons.filter(like = name).loc[[3], :].max(axis = 1)]))  # 0'ymin', 1'ymax'
+            char_ploygon = tuple(pd.concat([char_ploygons.filter(like=name).loc[[2], :].min(axis=1),
+                                            char_ploygons.filter(like=name).loc[[3], :].max(
+                                                axis=1)]))  # 0'ymin', 1'ymax'
             num_ploygons = {}
-            for sg_name in coordinates.filter(like = name).columns.values:
+            for sg_name in coordinates.filter(like=name).columns.values:
                 num_ploygon = list(map(lambda x: x[0], coordinates[sg_name].tolist()))
                 num_ploygons.update({sg_name: (min(num_ploygon), max(num_ploygon))})  # 0'xmin',1'xmax'
             grids_features.update({char_ploygon: num_ploygons})
 
     return grids_features
 
+
 def processTwitters(fpath):
     # read twitter file
     # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
+    lines = []
     twitter_features = []
 
     if 'twitter-melb' in fpath:
@@ -46,54 +56,73 @@ def processTwitters(fpath):
             for idx, line in enumerate(itertools.islice(json_file, 1, None)):
                 if line.startswith(']}'):
                     break
-                row = json.loads(line.rstrip(',\n'))
-                if row['doc']['coordinates']:
-                    if row['doc']['entities']['hashtags']:
-                        twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
-                                                 [row['doc']['entities']['hashtags'][0]['text']]))
+                lines.append(line)
+                if len(lines) == size:
+                    if rank == 0:
+                        sca_list = lines
                     else:
-                        twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
-                                                 row['doc']['entities']['hashtags']))
+                        sca_list = None
+                    line = comm.scatter(sca_list, root=0)
+                    row = json.loads(line.rstrip(',\n'))
+                    if row['doc']['coordinates']:
+                        if row['doc']['entities']['hashtags']:
+                            twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
+                                                     [row['doc']['entities']['hashtags'][0]['text']]))
+                        else:
+                            twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
+                                                     row['doc']['entities']['hashtags']))
+                    lines = []
             json_file.close()
     else:
         with open(fpath, encoding='UTF-8') as json_file:
             for line in itertools.islice(json_file, 1, None):
                 if line.startswith(']}'):
                     break
-                row = json.loads(line.rstrip(',\n'))
-                if row['value']['geometry']['coordinates']:
-                    if row['doc']['entities']['hashtags']:
-                        twitter_features.append((tuple(row['value']['geometry']['coordinates']),
-                                             [row['doc']['entities']['hashtags'][0]['text']]))
+                lines.append(line)
+                if len(lines) == size:
+                    if rank == 0:
+                        sca_list = lines
                     else:
-                        twitter_features.append(
-                            (tuple(row['value']['geometry']['coordinates']),
-                             row['doc']['entities']['hashtags']))
+                        sca_list = None
+                    line = comm.scatter(sca_list, root=0)
+                    row = json.loads(line.rstrip(',\n'))
+                    if row['value']['geometry']['coordinates']:
+                        if row['doc']['entities']['hashtags']:
+                            twitter_features.append((tuple(row['value']['geometry']['coordinates']),
+                                                 [row['doc']['entities']['hashtags'][0]['text']]))
+                        else:
+                            twitter_features.append(
+                                (tuple(row['value']['geometry']['coordinates']),
+                                 row['doc']['entities']['hashtags']))
+                    lines = []
             json_file.close()
-
     return twitter_features
 
-def largeGrids(grids_features:dict):
+
+def largeGrids(grids_features: dict):
     largeGrids = []
     for coord in grids_features.keys():
         largeGrids.append(coord)
-    
-    return dict(zip(names,largeGrids))
 
-def smallGrids(grids_features:dict):
+    return dict(zip(names, largeGrids))
+
+
+def smallGrids(grids_features: dict):
     smallGrids = {}
-    for (name, area) in zip(names,grids_features.values()):
-        smallGrids.update({name:area})
+    for (name, area) in zip(names, grids_features.values()):
+        smallGrids.update({name: area})
 
     return smallGrids
 
-def checkPointsInPoly(poly,coord):
+
+def checkPointsInPoly(poly, coord):
     polygon = np.array(poly)
     polyPath = mplPath.Path(polygon)
     point = coord
     acc = 0.000001
-    isIn = polyPath.contains_point(point, radius = acc)
+    isIn = polyPath.contains_point(point, radius=acc)
     return isIn
+
 
 def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
     # hashtagsDict is a dict of Counters of hashtags: {gird_id: Counter(hashtags1: freqs1, hashtags2: freqs2, ...)}
@@ -118,28 +147,33 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
 
     return hashtagsDict, countDict
 
+
 def main():
     beginninga_time = time.time()
 
     # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
     grids_file_path = r"D:\Download\CCC\melbGrid.json"
     # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-    twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
+    twitter_file_path = r'D:\Download\CCC\smallTwitter.json'
 
     myGrids = processGrids(grids_file_path)
-
     mylargeGrids = largeGrids(myGrids)
     mySmallGrids = smallGrids(myGrids)
 
     myTwitter = processTwitters(twitter_file_path)
-
     twitterDict, twitterCount = countPointsInGrids(mylargeGrids, mySmallGrids, myTwitter)
+
+    # need to gather the data, better to use numpy
+    #hashtags_gather = comm.gather(twitterDict, root = 0)
+    #count_gather = comm.gather(twitterCount, root=0)
+
     print("the hashTag count in grid C3 are %s" % twitterDict['C3'].most_common(5))
     print("the twitters count in grid C3 are %s" % twitterCount['C3'])
 
     end_time = time.time()
     used_time = end_time - beginninga_time
-    print ("the processing time is %f seconds" % used_time)
+    print("the processing time is %f seconds" % used_time)
 
-if __name__== "__main__":
+
+if __name__ == "__main__":
     main()
