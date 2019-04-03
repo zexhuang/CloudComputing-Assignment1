@@ -7,9 +7,6 @@ import pandas as pd
 from mpi4py import MPI
 from collections import Counter
 
-import matplotlib.path as mplPath
-import numpy as np
-
 names = ["A", "B", "C", "D"]
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -43,7 +40,6 @@ def processGrids(fpath):
             grids_features.update({char_ploygon: num_ploygons})
 
     return grids_features
-
 
 def processTwitters(fpath):
     # read twitter file
@@ -98,14 +94,12 @@ def processTwitters(fpath):
             json_file.close()
     return twitter_features
 
-
 def largeGrids(grids_features: dict):
     largeGrids = []
     for coord in grids_features.keys():
         largeGrids.append(coord)
 
     return dict(zip(names, largeGrids))
-
 
 def smallGrids(grids_features: dict):
     smallGrids = {}
@@ -137,6 +131,7 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
 
     return hashtagsDict, countDict
 
+<<<<<<< HEAD
 def gatherFlatten(result: dict):
     gatherings = comm.gather(result, root=0)
     flatten = pd.DataFrame()
@@ -148,6 +143,8 @@ def gatherFlatten(result: dict):
                 flatten = flatten.add(pd.DataFrame.from_records([gathering]), fill_value=0)
     return flatten
 
+=======
+>>>>>>> 2eac599bc469a88ab1a42c5e5f9bf0b42eac4634
 def main():
     beginninga_time = time.time()
 
@@ -172,7 +169,6 @@ def main():
         end_time = time.time()
         used_time = end_time - beginninga_time
         print("the processing time is %f seconds" % used_time)
-
 
 if __name__ == "__main__":
     main()
