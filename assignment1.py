@@ -7,9 +7,6 @@ import pandas as pd
 from mpi4py import MPI
 from collections import Counter
 
-import matplotlib.path as mplPath
-import numpy as np
-
 names = ["A", "B", "C", "D"]
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -43,7 +40,6 @@ def processGrids(fpath):
             grids_features.update({char_ploygon: num_ploygons})
 
     return grids_features
-
 
 def processTwitters(fpath):
     # read twitter file
@@ -98,7 +94,6 @@ def processTwitters(fpath):
             json_file.close()
     return twitter_features
 
-
 def largeGrids(grids_features: dict):
     largeGrids = []
     for coord in grids_features.keys():
@@ -106,23 +101,12 @@ def largeGrids(grids_features: dict):
 
     return dict(zip(names, largeGrids))
 
-
 def smallGrids(grids_features: dict):
     smallGrids = {}
     for (name, area) in zip(names, grids_features.values()):
         smallGrids.update({name: area})
 
     return smallGrids
-
-
-def checkPointsInPoly(poly, coord):
-    polygon = np.array(poly)
-    polyPath = mplPath.Path(polygon)
-    point = coord
-    acc = 0.000001
-    isIn = polyPath.contains_point(point, radius=acc)
-    return isIn
-
 
 def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
     # hashtagsDict is a dict of Counters of hashtags: {gird_id: Counter(hashtags1: freqs1, hashtags2: freqs2, ...)}
@@ -146,7 +130,6 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
                 break
 
     return hashtagsDict, countDict
-
 
 def main():
     beginninga_time = time.time()
@@ -173,7 +156,6 @@ def main():
     end_time = time.time()
     used_time = end_time - beginninga_time
     print("the processing time is %f seconds" % used_time)
-
 
 if __name__ == "__main__":
     main()
