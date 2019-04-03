@@ -131,7 +131,6 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
 
     return hashtagsDict, countDict
 
-<<<<<<< HEAD
 def gatherFlatten(result: dict):
     gatherings = comm.gather(result, root=0)
     flatten = pd.DataFrame()
@@ -143,8 +142,6 @@ def gatherFlatten(result: dict):
                 flatten = flatten.add(pd.DataFrame.from_records([gathering]), fill_value=0)
     return flatten
 
-=======
->>>>>>> 2eac599bc469a88ab1a42c5e5f9bf0b42eac4634
 def main():
     beginninga_time = time.time()
 
