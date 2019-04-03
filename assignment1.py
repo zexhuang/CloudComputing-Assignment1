@@ -114,16 +114,6 @@ def smallGrids(grids_features: dict):
 
     return smallGrids
 
-
-def checkPointsInPoly(poly, coord):
-    polygon = np.array(poly)
-    polyPath = mplPath.Path(polygon)
-    point = coord
-    acc = 0.000001
-    isIn = polyPath.contains_point(point, radius=acc)
-    return isIn
-
-
 def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
     # hashtagsDict is a dict of Counters of hashtags: {gird_id: Counter(hashtags1: freqs1, hashtags2: freqs2, ...)}
     hashtagsDict = {}
@@ -141,12 +131,22 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
                 for sgrid, spolygon in smallGrids[name].items():
                     if spolygon[0] <= pointX <= spolygon[1]:
                         countDict[sgrid] += 1
-                        hashtagsDict[sgrid].update(hashtag)
+                        hashtagsDict[sgrid].update(list(map(lambda x: x.lower(), hashtag)))
                         break
                 break
 
     return hashtagsDict, countDict
 
+def gatherFlatten(result: dict):
+    gatherings = comm.gather(result, root=0)
+    flatten = pd.DataFrame()
+    if rank == 0:
+        for idx, gathering in enumerate(gatherings):
+            if idx == 0:
+                flatten = pd.DataFrame.from_records([gathering])
+            else:
+                flatten = flatten.add(pd.DataFrame.from_records([gathering]), fill_value=0)
+    return flatten
 
 def main():
     beginninga_time = time.time()
@@ -154,7 +154,7 @@ def main():
     # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
     grids_file_path = r"D:\Download\CCC\melbGrid.json"
     # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-    twitter_file_path = r'D:\Download\CCC\smallTwitter.json'
+    twitter_file_path = r'D:\Download\CCC\twitter-melb.json'
 
     myGrids = processGrids(grids_file_path)
     mylargeGrids = largeGrids(myGrids)
@@ -162,17 +162,16 @@ def main():
 
     myTwitter = processTwitters(twitter_file_path)
     twitterDict, twitterCount = countPointsInGrids(mylargeGrids, mySmallGrids, myTwitter)
+    hashtags_gather = gatherFlatten(twitterDict)
+    count_gather = gatherFlatten(twitterCount)
+    if rank == 0:
+        print("Counting of tweets:\n", count_gather, "\nTop 5 hashtags in each grid:")
+        for grid in hashtags_gather:
+            print(grid, ":", hashtags_gather.iloc[0][grid].most_common(5))
 
-    # need to gather the data, better to use numpy
-    #hashtags_gather = comm.gather(twitterDict, root = 0)
-    #count_gather = comm.gather(twitterCount, root=0)
-
-    print("the hashTag count in grid C3 are %s" % twitterDict['C3'].most_common(5))
-    print("the twitters count in grid C3 are %s" % twitterCount['C3'])
-
-    end_time = time.time()
-    used_time = end_time - beginninga_time
-    print("the processing time is %f seconds" % used_time)
+        end_time = time.time()
+        used_time = end_time - beginninga_time
+        print("the processing time is %f seconds" % used_time)
 
 
 if __name__ == "__main__":
