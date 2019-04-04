@@ -7,10 +7,12 @@ import pandas as pd
 from mpi4py import MPI
 from collections import Counter
 
+# grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
+grids_file_path = r"D:\Download\CCC\melbGrid.json"
+# twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
+twitter_file_path = r'D:\Download\CCC\twitter-melb.json'
 names = ["A", "B", "C", "D"]
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
+
 
 def processGrids(fpath):
     # read melbGrid file
@@ -41,24 +43,16 @@ def processGrids(fpath):
 
     return grids_features
 
-def processTwitters(fpath):
+def processTwitters(fpath, communicator):
     # read twitter file
     # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
-    lines = []
     twitter_features = []
-
     if 'twitter-melb' in fpath:
         with open(fpath, encoding='UTF-8') as json_file:
             for idx, line in enumerate(itertools.islice(json_file, 1, None)):
                 if line.startswith(']}'):
                     break
-                lines.append(line)
-                if len(lines) == size:
-                    if rank == 0:
-                        sca_list = lines
-                    else:
-                        sca_list = None
-                    line = comm.scatter(sca_list, root=0)
+                if (idx % communicator.size) == communicator.rank:
                     row = json.loads(line.rstrip(',\n'))
                     if row['doc']['coordinates']:
                         if row['doc']['entities']['hashtags']:
@@ -67,31 +61,24 @@ def processTwitters(fpath):
                         else:
                             twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
                                                      row['doc']['entities']['hashtags']))
-                    lines = []
             json_file.close()
     else:
         with open(fpath, encoding='UTF-8') as json_file:
-            for line in itertools.islice(json_file, 1, None):
+            for idx, line in enumerate(itertools.islice(json_file, 1, None)):
                 if line.startswith(']}'):
                     break
-                lines.append(line)
-                if len(lines) == size:
-                    if rank == 0:
-                        sca_list = lines
-                    else:
-                        sca_list = None
-                    line = comm.scatter(sca_list, root=0)
+                if (idx % communicator.size) == communicator.rank:
                     row = json.loads(line.rstrip(',\n'))
                     if row['value']['geometry']['coordinates']:
                         if row['doc']['entities']['hashtags']:
                             twitter_features.append((tuple(row['value']['geometry']['coordinates']),
-                                                 [row['doc']['entities']['hashtags'][0]['text']]))
+                                                [row['doc']['entities']['hashtags'][0]['text']]))
                         else:
                             twitter_features.append(
                                 (tuple(row['value']['geometry']['coordinates']),
-                                 row['doc']['entities']['hashtags']))
-                    lines = []
+                                    row['doc']['entities']['hashtags']))
             json_file.close()
+
     return twitter_features
 
 def largeGrids(grids_features: dict):
@@ -124,17 +111,19 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
             if largeGrids.get(name)[0] <= pointY <= largeGrids.get(name)[1]:
                 for sgrid, spolygon in smallGrids[name].items():
                     if spolygon[0] <= pointX <= spolygon[1]:
+                        # count number of twitters of each grids
                         countDict[sgrid] += 1
+                        # count number of hashtags of each grids
                         hashtagsDict[sgrid].update(list(map(lambda x: x.lower(), hashtag)))
                         break
                 break
 
     return hashtagsDict, countDict
 
-def gatherFlatten(result: dict):
-    gatherings = comm.gather(result, root=0)
+def gatherFlatten(result: dict, communicator):
+    gatherings = communicator.gather(result, root=0)
     flatten = pd.DataFrame()
-    if rank == 0:
+    if communicator.rank == 0:
         for idx, gathering in enumerate(gatherings):
             if idx == 0:
                 flatten = pd.DataFrame.from_records([gathering])
@@ -145,20 +134,19 @@ def gatherFlatten(result: dict):
 def main():
     beginninga_time = time.time()
 
-    # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
-    grids_file_path = r"D:\Download\CCC\melbGrid.json"
-    # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-    twitter_file_path = r'D:\Download\CCC\twitter-melb.json'
-
+    # process information of grids
     myGrids = processGrids(grids_file_path)
     mylargeGrids = largeGrids(myGrids)
     mySmallGrids = smallGrids(myGrids)
 
-    myTwitter = processTwitters(twitter_file_path)
+    comm = MPI.COMM_WORLD
+
+    myTwitter = processTwitters(twitter_file_path, comm)
     twitterDict, twitterCount = countPointsInGrids(mylargeGrids, mySmallGrids, myTwitter)
-    hashtags_gather = gatherFlatten(twitterDict)
-    count_gather = gatherFlatten(twitterCount)
-    if rank == 0:
+    comm.Barrier()  # Stops every process until all processes have arrived
+    hashtags_gather = gatherFlatten(twitterDict, comm)
+    count_gather = gatherFlatten(twitterCount, comm)
+    if comm.rank == 0:
         print("Counting of tweets:\n", count_gather, "\nTop 5 hashtags in each grid:")
         for grid in hashtags_gather:
             print(grid, ":", hashtags_gather.iloc[0][grid].most_common(5))
