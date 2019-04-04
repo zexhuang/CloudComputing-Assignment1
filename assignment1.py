@@ -10,7 +10,7 @@ from collections import Counter
 # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
 grids_file_path = r"D:\Download\CCC\melbGrid.json"
 # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-twitter_file_path = r'D:\Download\CCC\twitter-melb.json'
+twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 names = ["A", "B", "C", "D"]
 
 
@@ -131,6 +131,14 @@ def gatherFlatten(result: dict, communicator):
                 flatten = flatten.add(pd.DataFrame.from_records([gathering]), fill_value=0)
     return flatten
 
+def mostCommon(hashtags: Counter(), k: int):
+    # collect all items whose value is greater or equal to tops
+    if hashtags:
+        hashtags = hashtags.most_common()
+        tops = hashtags[k-1][1]  # get the smallest value in top k values
+
+    return list(itertools.takewhile(lambda x: x[1] >= tops, hashtags))
+
 def main():
     beginninga_time = time.time()
 
@@ -147,9 +155,9 @@ def main():
     hashtags_gather = gatherFlatten(twitterDict, comm)
     count_gather = gatherFlatten(twitterCount, comm)
     if comm.rank == 0:
-        print("Counting of tweets:\n", count_gather, "\nTop 5 hashtags in each grid:")
-        for grid in hashtags_gather:
-            print(grid, ":", hashtags_gather.iloc[0][grid].most_common(5))
+        for grid, count in zip(count_gather, hashtags_gather):
+            print(f'{grid} has {count_gather.iloc[0][grid]} postings, '
+                  f'and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}')
 
         end_time = time.time()
         used_time = end_time - beginninga_time
