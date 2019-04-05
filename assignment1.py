@@ -8,9 +8,11 @@ from mpi4py import MPI
 from collections import Counter
 
 # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
-grids_file_path = r"D:\Download\CCC\melbGrid.json"
+# grids_file_path = r"D:\Download\CCC\melbGrid.json"
 # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
+# twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
+grids_file_path = "melbGrid.json"
+twitter_file_path = "tinyTwitter.json" 
 names = ["A", "B", "C", "D"]
 
 
@@ -47,7 +49,7 @@ def processTwitters(fpath, communicator):
     # read twitter file
     # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
     twitter_features = []
-    if 'twitter-melb' in fpath:
+    if 'bigTwitter' in fpath:
         with open(fpath, encoding='UTF-8') as json_file:
             for idx, line in enumerate(itertools.islice(json_file, 1, None)):
                 if line.startswith(']}'):
@@ -156,8 +158,7 @@ def main():
     count_gather = gatherFlatten(twitterCount, comm)
     if comm.rank == 0:
         for grid, count in zip(count_gather, hashtags_gather):
-            print(f'{grid} has {count_gather.iloc[0][grid]} postings, '
-                  f'and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}')
+            print(f'{grid} has {count_gather.iloc[0][grid]} postings,and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}')
 
         end_time = time.time()
         used_time = end_time - beginninga_time
