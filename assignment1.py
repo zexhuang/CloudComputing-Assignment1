@@ -44,7 +44,6 @@ def processGrids(fpath):
     return grids_features
 
 def processTwitters(fpath, communicator):
-    misstag = 0
     # read twitter file
     # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
     twitter_features = []
@@ -78,9 +77,6 @@ def processTwitters(fpath, communicator):
                             twitter_features.append(
                                 (tuple(row['value']['geometry']['coordinates']),
                                     row['doc']['entities']['hashtags']))
-                            if ' #' in row['value']['properties']['text']:
-                                misstag += 1
-            print(communicator.rank, misstag)
             json_file.close()
 
     return twitter_features
