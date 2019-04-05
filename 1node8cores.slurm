@@ -7,5 +7,5 @@
 #SBATCH --ntasks-per-node=8
 #SBATCH --cpus-per-task=1
 #SBATCH --time=00:10:00
-module load Python/3.4.3-goolf-2015a
+module load Python/3.6.4-intel-2017.u2
 mpirun -np 8 python3 assignment1.py

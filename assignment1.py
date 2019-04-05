@@ -158,7 +158,8 @@ def main():
     count_gather = gatherFlatten(twitterCount, comm)
     if comm.rank == 0:
         for grid, count in zip(count_gather, hashtags_gather):
-            print(f'{grid} has {count_gather.iloc[0][grid]} postings,and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}')
+            # print(f"{grid} has {count_gather.iloc[0][grid]} postings,and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}")
+            print ((count_gather.iloc[0][grid],mostCommon(hashtags_gather.iloc[0][grid], 5)) )
 
         end_time = time.time()
         used_time = end_time - beginninga_time
