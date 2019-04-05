@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p physical
+#SBATCH -p cloud
 #SBATCH --output=1node8cores_result.txt
 #SBATCH --error=1node8cores_error.txt
 #SBATCH --nodes=1
