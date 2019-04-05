@@ -3,7 +3,6 @@
 import json
 import time
 import itertools
-import re
 import pandas as pd
 from mpi4py import MPI
 from collections import Counter
@@ -11,7 +10,7 @@ from collections import Counter
 # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
 grids_file_path = r"D:\Download\CCC\melbGrid.json"
 # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-twitter_file_path = r'D:\Download\CCC\bigTwitter.json'
+twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 
 #grids_file_path = "melbGrid.json"
 #twitter_file_path = "bigTwitter.json"
@@ -59,7 +58,9 @@ def processTwitters(fpath, communicator):
                     row = json.loads(line.rstrip(',\n'))
                     if row['doc']['coordinates']:
                         twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
-                                                 set(re.findall(' #\S+ ', row['doc']['text']))))
+                                                 set(term for term in  # use set() to remove duplicated hashtags
+                                                     ('?' + row['doc']['text'] + '?').split()[:-1] if  # add a spectial mark to check if the raw text has space on both sides
+                                                     term.startswith('#'))))
             json_file.close()
     else:
         with open(fpath, encoding='UTF-8') as json_file:
@@ -70,7 +71,9 @@ def processTwitters(fpath, communicator):
                     row = json.loads(line.rstrip(',\n'))
                     if row['value']['geometry']['coordinates']:
                         twitter_features.append((tuple(row['value']['geometry']['coordinates']),
-                                                 set(re.findall(' #\S+ ', row['value']['properties']['text']))))
+                                                 set(term for term in
+                                                     ('?' + row['value']['properties']['text'] + '?').split()[:-1] if
+                                                     term.startswith('#'))))
             json_file.close()
 
     return twitter_features
@@ -108,7 +111,7 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list, names
                         # count number of twitters of each grids
                         countDict[sgrid] += 1
                         # count number of hashtags of each grids
-                        hashtagsDict[sgrid].update(list(map(lambda x: x.lower().strip(' #'), hashtag)))
+                        hashtagsDict[sgrid].update(list(map(lambda x: x.lower()[1:], hashtag)))
                         break
                 break
 
@@ -151,7 +154,6 @@ def main():
     if comm.rank == 0:
         for grid, count in zip(count_gather, hashtags_gather):
             print(f'{grid} has {count_gather.iloc[0][grid]} postings, and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}')
-
         end_time = time.time()
         used_time = end_time - beginninga_time
         print("the processing time is %f seconds" % used_time)
