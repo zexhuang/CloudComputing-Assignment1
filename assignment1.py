@@ -8,11 +8,9 @@ from mpi4py import MPI
 from collections import Counter
 
 # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
-# grids_file_path = r"D:\Download\CCC\melbGrid.json"
+grids_file_path = r"D:\Download\CCC\melbGrid.json"
 # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-# twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
-grids_file_path = "melbGrid.json"
-twitter_file_path = "tinyTwitter.json" 
+twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 names = ["A", "B", "C", "D"]
 
 
@@ -46,10 +44,11 @@ def processGrids(fpath):
     return grids_features
 
 def processTwitters(fpath, communicator):
+    misstag = 0
     # read twitter file
     # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
     twitter_features = []
-    if 'bigTwitter' in fpath:
+    if 'twitter-melb' in fpath:
         with open(fpath, encoding='UTF-8') as json_file:
             for idx, line in enumerate(itertools.islice(json_file, 1, None)):
                 if line.startswith(']}'):
@@ -79,6 +78,9 @@ def processTwitters(fpath, communicator):
                             twitter_features.append(
                                 (tuple(row['value']['geometry']['coordinates']),
                                     row['doc']['entities']['hashtags']))
+                            if ' #' in row['value']['properties']['text']:
+                                misstag += 1
+            print(communicator.rank, misstag)
             json_file.close()
 
     return twitter_features
@@ -158,8 +160,7 @@ def main():
     count_gather = gatherFlatten(twitterCount, comm)
     if comm.rank == 0:
         for grid, count in zip(count_gather, hashtags_gather):
-            # print(f"{grid} has {count_gather.iloc[0][grid]} postings,and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}")
-            print ((count_gather.iloc[0][grid],mostCommon(hashtags_gather.iloc[0][grid], 5)) )
+            print(f'{grid} has {count_gather.iloc[0][grid]} postings, and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}')
 
         end_time = time.time()
         used_time = end_time - beginninga_time
