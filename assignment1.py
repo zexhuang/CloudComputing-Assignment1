@@ -50,7 +50,7 @@ def processTwitters(fpath, communicator):
     # read twitter file
     # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
     twitter_features = []
-    if 'twitter-melb' in fpath:
+    if 'big' in fpath:
         with open(fpath, encoding='UTF-8') as json_file:
             for idx, line in enumerate(itertools.islice(json_file, 1, None)):
                 if line.startswith(']}'):
