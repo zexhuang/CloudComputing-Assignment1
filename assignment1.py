@@ -3,6 +3,7 @@
 import json
 import time
 import itertools
+import re
 import pandas as pd
 from mpi4py import MPI
 from collections import Counter
@@ -10,10 +11,9 @@ from collections import Counter
 # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
 # grids_file_path = r"D:\Download\CCC\melbGrid.json"
 # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-# twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
-names = ["A", "B", "C", "D"]
+# twitter_file_path = r'D:\Download\CCC\bigTwitter.json'
 
-grids_file_path = "melbGrid.json" 
+grids_file_path = "melbGrid.json"
 twitter_file_path = "bigTwitter.json"
 
 def processGrids(fpath):
@@ -26,6 +26,7 @@ def processGrids(fpath):
     with open(fpath, encoding='UTF-8') as json_file:
         grids_data = json.load(json_file)
         json_file.close()
+        names = set(map(lambda x: x['properties']['id'][0],grids_data['features']))
         char_ploygons.update(
             map(lambda x: [x['properties']['id'], list(x['properties'].values())[1:]], grids_data['features']))
         grids_coordinates.update(
@@ -43,13 +44,13 @@ def processGrids(fpath):
                 num_ploygons.update({sg_name: (min(num_ploygon), max(num_ploygon))})  # 0'xmin',1'xmax'
             grids_features.update({char_ploygon: num_ploygons})
 
-    return grids_features
+    return grids_features, names
 
 def processTwitters(fpath, communicator):
     # read twitter file
     # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
     twitter_features = []
-    if 'twitter-melb' in fpath:
+    if 'big' in fpath:
         with open(fpath, encoding='UTF-8') as json_file:
             for idx, line in enumerate(itertools.islice(json_file, 1, None)):
                 if line.startswith(']}'):
@@ -57,12 +58,8 @@ def processTwitters(fpath, communicator):
                 if (idx % communicator.size) == communicator.rank:
                     row = json.loads(line.rstrip(',\n'))
                     if row['doc']['coordinates']:
-                        if row['doc']['entities']['hashtags']:
-                            twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
-                                                     [row['doc']['entities']['hashtags'][0]['text']]))
-                        else:
-                            twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
-                                                     row['doc']['entities']['hashtags']))
+                        twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
+                                                 re.findall(' #\S+ ', row['doc']['text'])))
             json_file.close()
     else:
         with open(fpath, encoding='UTF-8') as json_file:
@@ -72,32 +69,27 @@ def processTwitters(fpath, communicator):
                 if (idx % communicator.size) == communicator.rank:
                     row = json.loads(line.rstrip(',\n'))
                     if row['value']['geometry']['coordinates']:
-                        if row['doc']['entities']['hashtags']:
-                            twitter_features.append((tuple(row['value']['geometry']['coordinates']),
-                                                [row['doc']['entities']['hashtags'][0]['text']]))
-                        else:
-                            twitter_features.append(
-                                (tuple(row['value']['geometry']['coordinates']),
-                                    row['doc']['entities']['hashtags']))
+                        twitter_features.append((tuple(row['value']['geometry']['coordinates']),
+                                                 re.findall(' #\S+ ', row['value']['properties']['text'])))
             json_file.close()
 
     return twitter_features
 
-def largeGrids(grids_features: dict):
+def largeGrids(grids_features: dict, names: set):
     largeGrids = []
     for coord in grids_features.keys():
         largeGrids.append(coord)
 
     return dict(zip(names, largeGrids))
 
-def smallGrids(grids_features: dict):
+def smallGrids(grids_features: dict, names: set):
     smallGrids = {}
     for (name, area) in zip(names, grids_features.values()):
         smallGrids.update({name: area})
 
     return smallGrids
 
-def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
+def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list, names: set):
     # hashtagsDict is a dict of Counters of hashtags: {gird_id: Counter(hashtags1: freqs1, hashtags2: freqs2, ...)}
     hashtagsDict = {}
     # hashtagsDict is a dict of twitter number of each grid: {gird_id: num of twitters...}
@@ -116,7 +108,7 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list):
                         # count number of twitters of each grids
                         countDict[sgrid] += 1
                         # count number of hashtags of each grids
-                        hashtagsDict[sgrid].update(list(map(lambda x: x.lower(), hashtag)))
+                        hashtagsDict[sgrid].update(list(map(lambda x: x.lower().strip(' #'), hashtag)))
                         break
                 break
 
@@ -145,14 +137,14 @@ def main():
     beginninga_time = time.time()
 
     # process information of grids
-    myGrids = processGrids(grids_file_path)
-    mylargeGrids = largeGrids(myGrids)
-    mySmallGrids = smallGrids(myGrids)
+    myGrids, gridNames = processGrids(grids_file_path)
+    mylargeGrids = largeGrids(myGrids, gridNames)
+    mySmallGrids = smallGrids(myGrids, gridNames)
 
     comm = MPI.COMM_WORLD
 
     myTwitter = processTwitters(twitter_file_path, comm)
-    twitterDict, twitterCount = countPointsInGrids(mylargeGrids, mySmallGrids, myTwitter)
+    twitterDict, twitterCount = countPointsInGrids(mylargeGrids, mySmallGrids, myTwitter, gridNames)
     comm.Barrier()  # Stops every process until all processes have arrived
     hashtags_gather = gatherFlatten(twitterDict, comm)
     count_gather = gatherFlatten(twitterCount, comm)
