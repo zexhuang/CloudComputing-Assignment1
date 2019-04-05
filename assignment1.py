@@ -9,12 +9,12 @@ from mpi4py import MPI
 from collections import Counter
 
 # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
-# grids_file_path = r"D:\Download\CCC\melbGrid.json"
+grids_file_path = r"D:\Download\CCC\melbGrid.json"
 # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-# twitter_file_path = r'D:\Download\CCC\bigTwitter.json'
+twitter_file_path = r'D:\Download\CCC\bigTwitter.json'
 
-grids_file_path = "melbGrid.json"
-twitter_file_path = "bigTwitter.json"
+#grids_file_path = "melbGrid.json"
+#twitter_file_path = "bigTwitter.json"
 
 def processGrids(fpath):
     # read melbGrid file
@@ -59,7 +59,7 @@ def processTwitters(fpath, communicator):
                     row = json.loads(line.rstrip(',\n'))
                     if row['doc']['coordinates']:
                         twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
-                                                 re.findall(' #\S+ ', row['doc']['text'])))
+                                                 set(re.findall(' #\S+ ', row['doc']['text']))))
             json_file.close()
     else:
         with open(fpath, encoding='UTF-8') as json_file:
@@ -70,7 +70,7 @@ def processTwitters(fpath, communicator):
                     row = json.loads(line.rstrip(',\n'))
                     if row['value']['geometry']['coordinates']:
                         twitter_features.append((tuple(row['value']['geometry']['coordinates']),
-                                                 re.findall(' #\S+ ', row['value']['properties']['text'])))
+                                                 set(re.findall(' #\S+ ', row['value']['properties']['text']))))
             json_file.close()
 
     return twitter_features
