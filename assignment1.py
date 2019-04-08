@@ -10,7 +10,7 @@ from collections import Counter
 # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
 grids_file_path = r"D:\Download\CCC\melbGrid.json"
 # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
+twitter_file_path = r'D:\Download\CCC\bigTwitter.json'
 
 #grids_file_path = "melbGrid.json"
 #twitter_file_path = "bigTwitter.json"
@@ -55,12 +55,15 @@ def processTwitters(fpath, communicator):
                 if line.startswith(']}'):
                     break
                 if (idx % communicator.size) == communicator.rank:
-                    row = json.loads(line.rstrip(',\n'))
-                    if row['doc']['coordinates']:
-                        twitter_features.append((tuple(row['doc']['coordinates']['coordinates']),
-                                                 set(term for term in  # use set() to remove duplicated hashtags
-                                                     ('?' + row['doc']['text'] + '?').split()[:-1] if  # add a spectial mark to check if the raw text has space on both sides
-                                                     term.startswith('#'))))
+                    whereIsCoor = line.find("coordinates\":{\"type\":\"Point\",\"coordinates\":[")
+                    whereIsText = line.find("\"text\":\"")
+                    if whereIsCoor != -1:
+                        coordinates = (float(i) for i in line[whereIsCoor+44:whereIsCoor+70].split("]")[0].split(","))
+                        text = line[whereIsText+8: whereIsText+148].split("\",")[0]
+                        twitter_features.append((coordinates,
+                                                 # use set() to remove duplicated hashtags
+                                                 set(term for term in text.split(" ")[1:-1] if term.startswith('#'))))
+
             json_file.close()
     else:
         with open(fpath, encoding='UTF-8') as json_file:
@@ -68,12 +71,16 @@ def processTwitters(fpath, communicator):
                 if line.startswith(']}'):
                     break
                 if (idx % communicator.size) == communicator.rank:
-                    row = json.loads(line.rstrip(',\n'))
-                    if row['value']['geometry']['coordinates']:
-                        twitter_features.append((tuple(row['value']['geometry']['coordinates']),
-                                                 set(term for term in
-                                                     ('?' + row['value']['properties']['text'] + '?').split()[:-1] if
-                                                     term.startswith('#'))))
+                    whereIsCoor = line.find("geometry\":{\"type\":\"Point\",\"coordinates\":[")
+                    whereIsText = line.find("\"text\":\"")
+                    if whereIsCoor != -1:
+                        coordinates = tuple(float(i) for i in line[whereIsCoor+41:whereIsCoor+70].split("]")[0].split(","))
+                        text = line[whereIsText + 8: whereIsText + 148].split("\",")[0]
+                        twitter_features.append((coordinates,
+                                                 # use set() to remove duplicated hashtags
+                                                 set(term for term in text.split(" ")[1:-1] if term.startswith('#'))))
+                    else:
+                        continue
             json_file.close()
 
     return twitter_features
@@ -154,6 +161,10 @@ def main():
     if comm.rank == 0:
         for grid, count in zip(count_gather, hashtags_gather):
             print(f'{grid} has {count_gather.iloc[0][grid]} postings, and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}')
+        with open('check.txt', 'a', encoding='utf8') as f:
+            for hashtags in myTwitter:
+                if hashtags[1]:
+                    f.write(str(hashtags[1]))
         end_time = time.time()
         used_time = end_time - beginninga_time
         print("the processing time is %f seconds" % used_time)
