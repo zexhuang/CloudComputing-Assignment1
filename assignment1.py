@@ -49,39 +49,21 @@ def processTwitters(fpath, communicator):
     # read twitter file
     # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
     twitter_features = []
-    if 'big' in fpath:
-        with open(fpath, encoding='UTF-8') as json_file:
-            for idx, line in enumerate(itertools.islice(json_file, 1, None)):
-                if line.startswith(']}'):
-                    break
-                if (idx % communicator.size) == communicator.rank:
-                    whereIsCoor = line.find("coordinates\":{\"type\":\"Point\",\"coordinates\":[")
-                    whereIsText = line.find("\"text\":\"")
-                    if whereIsCoor != -1:
-                        coordinates = (float(i) for i in line[whereIsCoor+44:whereIsCoor+70].split("]")[0].split(","))
-                        text = line[whereIsText+8: whereIsText+148].split("\",")[0]
-                        twitter_features.append((coordinates,
-                                                 # use set() to remove duplicated hashtags
-                                                 set(term for term in text.split(" ")[1:-1] if term.startswith('#'))))
+    with open(fpath, encoding='UTF-8') as json_file:
+        for idx, line in enumerate(itertools.islice(json_file, 1, None)):
+            if line.startswith(']}'):
+                break
+            if (idx % communicator.size) == communicator.rank:
+                whereIsCoor = line.find("coordinates\":{\"type\":\"Point\",\"coordinates\":[")
+                whereIsText = line.find("\"text\":\"")
+                if whereIsCoor != -1:
+                    coordinates = (float(i) for i in line[whereIsCoor+44:whereIsCoor+70].split("]")[0].split(","))
+                    text = line[whereIsText+8: whereIsText+148].split("\",")[0]
+                    twitter_features.append((coordinates,
+                                                # use set() to remove duplicated hashtags
+                                                set(term for term in text.split(" ")[1:-1] if term.startswith('#'))))
 
-            json_file.close()
-    else:
-        with open(fpath, encoding='UTF-8') as json_file:
-            for idx, line in enumerate(itertools.islice(json_file, 1, None)):
-                if line.startswith(']}'):
-                    break
-                if (idx % communicator.size) == communicator.rank:
-                    whereIsCoor = line.find("geometry\":{\"type\":\"Point\",\"coordinates\":[")
-                    whereIsText = line.find("\"text\":\"")
-                    if whereIsCoor != -1:
-                        coordinates = tuple(float(i) for i in line[whereIsCoor+41:whereIsCoor+70].split("]")[0].split(","))
-                        text = line[whereIsText + 8: whereIsText + 148].split("\",")[0]
-                        twitter_features.append((coordinates,
-                                                 # use set() to remove duplicated hashtags
-                                                 set(term for term in text.split(" ")[1:-1] if term.startswith('#'))))
-                    else:
-                        continue
-            json_file.close()
+    json_file.close()
 
     return twitter_features
 
@@ -146,7 +128,6 @@ def mostCommon(hashtags: Counter(), k: int):
 
 def main():
     beginninga_time = time.time()
-
     # process information of grids
     myGrids, gridNames = processGrids(grids_file_path)
     mylargeGrids = largeGrids(myGrids, gridNames)
