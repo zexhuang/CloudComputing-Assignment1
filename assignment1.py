@@ -1,5 +1,6 @@
-# Authors: Zexian Huang
+# Authors: Zexian Huang, Zhixin Zheng 
 # Date: March 24 2019
+# Purpose: This code is for COMP90024: Cluster and Cloud Computing Assignment1
 import json
 import time
 import itertools
@@ -139,13 +140,11 @@ def main():
     comm.Barrier()  # Stops every process until all processes have arrived
     hashtags_gather = gatherFlatten(twitterDict, comm)
     count_gather = gatherFlatten(twitterCount, comm)
+    
     if comm.rank == 0:
         for grid, count in zip(count_gather, hashtags_gather):
             print(f'{grid} has {count_gather.iloc[0][grid]} postings, and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}')
-        with open('check.txt', 'a', encoding='utf8') as f:
-            for hashtags in myTwitter:
-                if hashtags[1]:
-                    f.write(str(hashtags[1]))
+
         end_time = time.time()
         used_time = end_time - beginninga_time
         print("the processing time is %f seconds" % used_time)
