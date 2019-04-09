@@ -7,10 +7,10 @@ import pandas as pd
 from mpi4py import MPI
 from collections import Counter
 
-grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
-grids_file_path = r"D:\Download\CCC\melbGrid.json"
-twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
+# grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
+# grids_file_path = r"D:\Download\CCC\melbGrid.json"
+# twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
+# twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 
 grids_file_path = "melbGrid.json"
 twitter_file_path = "bigTwitter.json"
