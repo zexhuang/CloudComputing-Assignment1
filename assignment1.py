@@ -7,13 +7,13 @@ import pandas as pd
 from mpi4py import MPI
 from collections import Counter
 
-# grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
+grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
 grids_file_path = r"D:\Download\CCC\melbGrid.json"
-# twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-twitter_file_path = r'D:\Download\CCC\bigTwitter.json'
+twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
+twitter_file_path = r'D:\Download\CCC\tinyTwitter.json'
 
-#grids_file_path = "melbGrid.json"
-#twitter_file_path = "bigTwitter.json"
+grids_file_path = "melbGrid.json"
+twitter_file_path = "bigTwitter.json"
 
 def processGrids(fpath):
     # read melbGrid file
@@ -138,10 +138,11 @@ def gatherFlatten(result: dict, communicator):
 def mostCommon(hashtags: Counter(), k: int):
     # collect all items whose value is greater or equal to tops
     if hashtags:
+        # get the smallest value in top k values
+        threshold = sorted(set(hashtags.values()))[-k] if k <= len(sorted(set(hashtags.values()))) else 0
         hashtags = hashtags.most_common()
-        tops = hashtags[k-1][1]  # get the smallest value in top k values
 
-    return list(itertools.takewhile(lambda x: x[1] >= tops, hashtags))
+    return list(itertools.takewhile(lambda x: x[1] >= threshold, hashtags))
 
 def main():
     beginninga_time = time.time()
@@ -157,14 +158,11 @@ def main():
     twitterDict, twitterCount = countPointsInGrids(mylargeGrids, mySmallGrids, myTwitter, gridNames)
     comm.Barrier()  # Stops every process until all processes have arrived
     hashtags_gather = gatherFlatten(twitterDict, comm)
-    count_gather = gatherFlatten(twitterCount, comm)
+    count_gather = gatherFlatten(twitterCount, comm).T.sort_values(by=0, ascending=False).T
     if comm.rank == 0:
         for grid, count in zip(count_gather, hashtags_gather):
             print(f'{grid} has {count_gather.iloc[0][grid]} postings, and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}')
-        with open('check.txt', 'a', encoding='utf8') as f:
-            for hashtags in myTwitter:
-                if hashtags[1]:
-                    f.write(str(hashtags[1]))
+
         end_time = time.time()
         used_time = end_time - beginninga_time
         print("the processing time is %f seconds" % used_time)
