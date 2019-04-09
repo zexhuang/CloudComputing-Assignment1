@@ -139,8 +139,9 @@ def main():
     twitterDict, twitterCount = countPointsInGrids(mylargeGrids, mySmallGrids, myTwitter, gridNames)
     comm.Barrier()  # Stops every process until all processes have arrived
     hashtags_gather = gatherFlatten(twitterDict, comm)
-    count_gather = gatherFlatten(twitterCount, comm).T.sort_values(by=0, ascending=False).T
+    count_gather = gatherFlatten(twitterCount, comm)
     if comm.rank == 0:
+        count_gather = count_gather.T.sort_values(by=0, ascending=False).T
         for grid, count in zip(count_gather, hashtags_gather):
             print(f'{grid} has {count_gather.iloc[0][grid]} postings, and its Top 5 hashtags are {mostCommon(hashtags_gather.iloc[0][grid], 5)}')
 
