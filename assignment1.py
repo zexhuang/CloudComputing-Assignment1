@@ -10,7 +10,7 @@ from collections import Counter
 # grids_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/melbGrid.json'
 # grids_file_path = r"D:\Download\CCC\melbGrid.json"
 # twitter_file_path = '/Users/Huangzexian/Downloads/CloudComputing/assignment1-remote/tinyTwitter.json'
-# twitter_file_path = r'D:\Download\CCC\smallTwitter.json'
+# twitter_file_path = r'D:\Download\CCC\bigTwitter.json'
 
 grids_file_path = "melbGrid.json"
 twitter_file_path = "bigTwitter.json"
@@ -105,6 +105,7 @@ def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list, names
 
 def gatherFlatten(result: dict, communicator):
     gatherings = communicator.gather(result, root=0)
+    flatten = {}
     if communicator.rank == 0:
         for idx, gathering in enumerate(gatherings):
             for grid in gathering.keys():
@@ -137,11 +138,11 @@ def main():
 
     myTwitter = processTwitters(twitter_file_path, comm)
     twitterDict = countPointsInGrids(mylargeGrids, mySmallGrids, myTwitter, gridNames)
-    comm.Barrier()  # Stops every process until all processes have arrived
+    # comm.Barrier()  # Stops every process until all processes have arrived
     twitters_gather = gatherFlatten(twitterDict, comm)
     if comm.rank == 0:
         for grid in sorted(twitters_gather.items(), reverse=True, key=lambda d: d[1]["counting"]):
-            print(f'{grid[0]} has {grid[1]["counting"]} postings, and its Top 5 hashtags are {mostCommon(grid[1]["hashtags"], 5)}')
+            print(f'{grid[0]} has {grid[1]["counting"]} postings, and its Top 5 hashtags are {mostCommon(grid[1]["hashtags"], 5)}'.encode("utf8"))
         end_time = time.time()
         used_time = end_time - beginninga_time
         print("the processing time is %f seconds" % used_time)
