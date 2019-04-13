@@ -45,10 +45,13 @@ def processGrids(fpath):
 
     return grids_features, names
 
-def processTwitters(fpath, communicator):
+def processTwitters(fpath, communicator, largeGrids: dict, smallGrids: dict, names: set):
     # read twitter file
     # twitter_features is a list of tuple whose element are tuple of coordinates and list of hashtags
-    twitter_features = []
+    twitterDict = {}
+    for s in smallGrids.values():
+        for sid in s.keys():
+            twitterDict[sid] = {"counting": 0, "hashtags": Counter()}
     with open(fpath, encoding='UTF-8') as json_file:
         for idx, line in enumerate(itertools.islice(json_file, 1, None)):
             if line.startswith(']}'):
@@ -57,15 +60,26 @@ def processTwitters(fpath, communicator):
                 whereIsCoor = line.find("coordinates\":{\"type\":\"Point\",\"coordinates\":[")
                 whereIsText = line.find("\"text\":\"")
                 if whereIsCoor != -1:
-                    coordinates = (float(i) for i in line[whereIsCoor+44:whereIsCoor+70].split("]")[0].split(","))
+                    pointX, pointY = (float(i) for i in line[whereIsCoor+44:whereIsCoor+70].split("]")[0].split(","))
                     text = line[whereIsText+8: whereIsText+148].split("\",")[0]
-                    twitter_features.append((coordinates,
-                                                # use set() to remove duplicated hashtags
-                                                set(term for term in text.split(" ")[1:-1] if term.startswith('#'))))
+                    hashtags = set(term for term in text.split(" ")[1:-1] if term.startswith('#'))
+                    for name in names:
+                        if largeGrids.get(name)[0] <= pointY <= largeGrids.get(name)[1]:
+                            for sgrid, spolygon in smallGrids[name].items():
+                                if spolygon[0] <= pointX <= spolygon[1]:
+                                    # count number of twitters of each grids
+                                    twitterDict[sgrid]["counting"] += 1
+                                    # count number of hashtags of each grids
+                                    twitterDict[sgrid]["hashtags"].update(
+                                        list(map(lambda x: x.lower()[1:], hashtags)))
+                                    break
+                            break
+                    else:
+                        continue
 
     json_file.close()
 
-    return twitter_features
+    return twitterDict
 
 def largeGrids(grids_features: dict, names: set):
     largeGrids = []
@@ -80,28 +94,6 @@ def smallGrids(grids_features: dict, names: set):
         smallGrids.update({name: area})
 
     return smallGrids
-
-def countPointsInGrids(largeGrids: dict, smallGrids: dict, twitters: list, names: set):
-
-    twitterDict = {}
-    for s in smallGrids.values():
-        for sid in s.keys():
-            twitterDict[sid] = {"counting": 0, "hashtags": Counter()}
-    for twitter in twitters:
-        pointX, pointY = twitter[0]
-        hashtag = twitter[1]
-        for name in names:
-            if largeGrids.get(name)[0] <= pointY <= largeGrids.get(name)[1]:
-                for sgrid, spolygon in smallGrids[name].items():
-                    if spolygon[0] <= pointX <= spolygon[1]:
-                        # count number of twitters of each grids
-                        twitterDict[sgrid]["counting"] += 1
-                        # count number of hashtags of each grids
-                        twitterDict[sgrid]["hashtags"].update(list(map(lambda x: x.lower()[1:], hashtag)))
-                        break
-                break
-
-    return twitterDict
 
 def gatherFlatten(result: dict, communicator):
     gatherings = communicator.gather(result, root=0)
@@ -136,13 +128,12 @@ def main():
 
     comm = MPI.COMM_WORLD
 
-    myTwitter = processTwitters(twitter_file_path, comm)
-    twitterDict = countPointsInGrids(mylargeGrids, mySmallGrids, myTwitter, gridNames)
-    # comm.Barrier()  # Stops every process until all processes have arrived
+    twitterDict = processTwitters(twitter_file_path, comm, mylargeGrids, mySmallGrids, gridNames)
+    #comm.Barrier()  # Stops every process until all processes have arrived
     twitters_gather = gatherFlatten(twitterDict, comm)
     if comm.rank == 0:
         for grid in sorted(twitters_gather.items(), reverse=True, key=lambda d: d[1]["counting"]):
-            print(f'{grid[0]} has {grid[1]["counting"]} postings, and its Top 5 hashtags are {mostCommon(grid[1]["hashtags"], 5)}'.encode("utf8"))
+            print(f'{grid[0]} has {grid[1]["counting"]} postings, and its Top 5 hashtags are {mostCommon(grid[1]["hashtags"], 5)}')
         end_time = time.time()
         used_time = end_time - beginninga_time
         print("the processing time is %f seconds" % used_time)
