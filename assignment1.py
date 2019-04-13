@@ -19,8 +19,9 @@ def processGrids(fpath):
     """Process information of grids
 
     This function process melbGird.json,
-    extracting names of large grids in alphabetical order ("names")
-    and coordinates of each small grids (grids_features)
+    extracting names of large grids in alphabetical order ("names"),
+    coordinates of each large grids ("largeGrids"),
+    and coordinates of each small grids ("smallGrids").
     In this file, we denoted the grids whose names are like "A" as large grids,
     and the grids whose names are like "A1" as small grids
     """
@@ -32,49 +33,38 @@ def processGrids(fpath):
         grids_data = json.load(json_file)
         json_file.close()
 
-        # Extract names of large grids in alphabetical order, e.g. ('A', 'B', 'C', 'D')
-        names = sorted(set(map(lambda x: x['properties']['id'][0], grids_data['features'])))
+    # Extract names of large grids in alphabetical order, e.g. ('A', 'B', 'C', 'D')
+    names = sorted(set(map(lambda x: x['properties']['id'][0], grids_data['features'])))
 
-        # Extract names of large grids in alphabetical order, e.g. ('A', 'B', 'C', 'D')
-        char_ploygons = {}  # "char_ploygons" stores coordinates of large grids
-        char_ploygons.update(
-            map(lambda x: [x['properties']['id'], list(x['properties'].values())[1:]], grids_data['features']))
-        grids_coordinates = {}  # "grids_coordinates" stores coordinates of small grids
-        grids_coordinates.update(
-            map(lambda x: [x['properties']['id'], list(map(lambda y: tuple(y), x['geometry']['coordinates'][0]))],
-                grids_data['features']))
-        char_ploygons = pd.DataFrame(char_ploygons)
-        coordinates = pd.DataFrame(grids_coordinates)
-        # Extract maximum and minimum coordinates of Y and X from "char_ploygon" and "grids_coordinates" respectively
-        for name in names:
-            char_ploygon = tuple(pd.concat([char_ploygons.filter(like=name).loc[[2], :].min(axis=1),
-                                            char_ploygons.filter(like=name).loc[[3], :].max(
-                                                axis=1)]))  # 0'ymin', 1'ymax'
-            num_ploygons = {}
-            for sg_name in coordinates.filter(like=name).columns.values:
-                num_ploygon = list(map(lambda x: x[0], coordinates[sg_name].tolist()))
-                num_ploygons.update({sg_name: (min(num_ploygon), max(num_ploygon))})  # 0'xmin',1'xmax'
-            grids_features.update({char_ploygon: num_ploygons})
+    # Extract names of large grids in alphabetical order, e.g. ('A', 'B', 'C', 'D')
+    char_ploygons = {}  # "char_ploygons" stores coordinates of large grids
+    char_ploygons.update(
+        map(lambda x: [x['properties']['id'], list(x['properties'].values())[1:]], grids_data['features']))
+    grids_coordinates = {}  # "grids_coordinates" stores coordinates of small grids
+    grids_coordinates.update(
+        map(lambda x: [x['properties']['id'], list(map(lambda y: tuple(y), x['geometry']['coordinates'][0]))],
+            grids_data['features']))
+    char_ploygons = pd.DataFrame(char_ploygons)
+    coordinates = pd.DataFrame(grids_coordinates)
+    # Extract maximum and minimum coordinates of Y and X from "char_ploygon" and "grids_coordinates" respectively
+    for name in names:
+        char_ploygon = tuple(pd.concat([char_ploygons.filter(like=name).loc[[2], :].min(axis=1),
+                                        char_ploygons.filter(like=name).loc[[3], :].max(
+                                            axis=1)]))  # 0'ymin', 1'ymax'
+        num_ploygons = {}
+        for sg_name in coordinates.filter(like=name).columns.values:
+            num_ploygon = list(map(lambda x: x[0], coordinates[sg_name].tolist()))
+            num_ploygons.update({sg_name: (min(num_ploygon), max(num_ploygon))})  # 0'xmin',1'xmax'
+        grids_features.update({char_ploygon: num_ploygons})
 
-    return grids_features, names
+    # Extract coordinates of large grids
+    largeGrids = dict(zip(names, [coord for coord in grids_features.keys()]))
 
-def largeGrids(grids_features: dict, names: set):
-    """Extract coordinates of large grids
-    """
-    largeGrids = []
-    for coord in grids_features.keys():
-        largeGrids.append(coord)
-
-    return dict(zip(names, largeGrids))
-
-def smallGrids(grids_features: dict, names: set):
-    """Extract coordinates of small grids
-    """
+    # Extract coordinates of small grids
     smallGrids = {}
-    for (name, area) in zip(names, grids_features.values()):
-        smallGrids.update({name: area})
+    smallGrids.update(map(lambda x, y: (x, y), names, grids_features.values()))
 
-    return smallGrids
+    return largeGrids, smallGrids, names
 
 def processTwitters(fpath, communicator, largeGrids: dict, smallGrids: dict, names: set):
     """Process information of twitters,including extraction and counting
@@ -155,13 +145,11 @@ def main():
 
     beginninga_time = time.time()
     # Process information of grids
-    myGrids, gridNames = processGrids(grids_file_path)
-    mylargeGrids = largeGrids(myGrids, gridNames)
-    mySmallGrids = smallGrids(myGrids, gridNames)
+    mylargeGrids, mysmallGrids, gridNames = processGrids(grids_file_path)
 
     comm = MPI.COMM_WORLD
     # Process information of grids
-    twitterDict = processTwitters(twitter_file_path, comm, mylargeGrids, mySmallGrids, gridNames)
+    twitterDict = processTwitters(twitter_file_path, comm, mylargeGrids, mysmallGrids, gridNames)
     twitters_gather = gatherFlatten(twitterDict, comm)
     if comm.rank == 0:
         # Sort the grids statistics in descending order, and Print them
